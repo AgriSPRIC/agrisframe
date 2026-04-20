@@ -160,12 +160,13 @@
         </div>
     </main>
 
-    <!-- UI MỚI: Pop-up lưu ảnh thân thiện Mobile -->
+    <!-- UI MỚI: Pop-up lưu ảnh thông minh tuỳ theo thiết bị -->
     <div id="resultModal" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl transform scale-95 transition-transform duration-300" id="modalContent">
             <h3 class="text-2xl font-black text-emerald-800 mb-2">Hoàn tất! 🎉</h3>
             
-            <p class="text-sm text-slate-600 mb-5 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+            <!-- Hướng dẫn này sẽ bị ẩn nếu là Máy tính -->
+            <p id="mobileInstruction" class="text-sm text-slate-600 mb-5 bg-emerald-50 p-3 rounded-xl border border-emerald-100 hidden">
                 👉 <strong>Chạm và giữ</strong> vào ảnh bên dưới rồi chọn <strong>"Lưu hình ảnh"</strong> để tải về điện thoại.
             </p>
             
@@ -175,10 +176,9 @@
             
             <div class="flex gap-3">
                 <button id="closeModalBtn" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">Đóng lại</button>
-                <!-- Đổi text thành Lưu hình ảnh & nâng cấp logic -->
+                <!-- Nội dung Nút sẽ thay đổi linh hoạt bởi Javascript -->
                 <button id="forceDownloadBtn" class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-200 flex justify-center items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Lưu hình ảnh
+                    <!-- Text will be set by JS -->
                 </button>
             </div>
         </div>
@@ -204,6 +204,7 @@
         const closeModalBtn = document.getElementById('closeModalBtn');
         const forceDownloadBtn = document.getElementById('forceDownloadBtn');
         const modalContent = document.getElementById('modalContent');
+        const mobileInstruction = document.getElementById('mobileInstruction');
 
         let frameImg = new Image();
         let photoImg = new Image();
@@ -218,7 +219,27 @@
             flip: 1, isDragging: false, lastX: 0, lastY: 0 
         };
 
+        // Biến kiểm tra thiết bị di động
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        function setupDeviceUI() {
+            if (isMobile) {
+                mobileInstruction.classList.remove('hidden');
+                forceDownloadBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Lưu hình ảnh
+                `;
+            } else {
+                mobileInstruction.classList.add('hidden');
+                forceDownloadBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Tải dạng File
+                `;
+            }
+        }
+
         function init() {
+            setupDeviceUI();
             loadFrame(DEFAULT_FRAME_URL);
         }
 
@@ -401,7 +422,6 @@
 
         closeModalBtn.onclick = closeModal;
 
-        // Hàm hỗ trợ chuyển Base64 thành File Object chuẩn (cần cho Mobile Native Share)
         function dataURLtoFile(dataurl, filename) {
             let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -411,29 +431,32 @@
             return new File([u8arr], filename, {type: mime});
         }
 
-        // Logic Nút Tải/Lưu ảnh mới
         forceDownloadBtn.onclick = async () => {
             const fileName = `AgriS_Avatar_${Date.now()}.png`;
             
-            // 1. Thử gọi Web Share API (Cách tốt nhất trên Mobile iOS/Android)
-            try {
-                const file = dataURLtoFile(resultImage.src, fileName);
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Avatar AgriS của tôi',
-                    });
-                    return; // Nếu Share thành công thì dừng ở đây
+            if (isMobile) {
+                // 1. Nếu là Mobile: Kích hoạt Share API gốc của OS
+                try {
+                    const file = dataURLtoFile(resultImage.src, fileName);
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Avatar AgriS của tôi',
+                        });
+                    } else {
+                        // Fallback nếu share bị từ chối
+                        alert('Hãy chạm và giữ vào ảnh để lưu nhé!');
+                    }
+                } catch (error) {
+                    console.log("Web Share API error", error);
                 }
-            } catch (error) {
-                console.log("Trình duyệt không hỗ trợ Share API hoặc user huỷ", error);
+            } else {
+                // 2. Nếu là PC: Buộc tải xuống (Force Download) ngay lập tức
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = resultImage.src;
+                link.click();
             }
-
-            // 2. Fallback: Nếu không có Share API (VD trên PC), tự động dùng thẻ <a> để tải
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = resultImage.src;
-            link.click();
         };
 
         downloadBtn.onclick = () => {
@@ -447,8 +470,8 @@
                     const dataUrl = canvas.toDataURL('image/png', 1.0);
                     openModal(dataUrl);
                     
-                    // Trên PC tự động tải file ngầm luôn để đỡ phải bấm thêm
-                    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    if (!isMobile) {
+                        // Nếu là PC, khi Modal hiện lên thì tự động tải ảnh ngầm luôn, không bắt user bấm thêm 1 lần
                         forceDownloadBtn.click();
                     }
                 } catch (err) { 
