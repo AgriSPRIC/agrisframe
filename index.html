@@ -10,7 +10,6 @@
         body { background-color: #f8fafc; font-family: 'Lexend', sans-serif; color: #1e293b; touch-action: manipulation; }
         .gradient-brand { background: linear-gradient(135deg, #065f46 0%, #10b981 100%); }
         
-        /* Đã tối ưu lại nền caro chỉ hiện đúng bằng diện tích Canvas */
         .checkerboard-bg {
             background-image: conic-gradient(#fff 0.25turn, #e2e8f0 0.25turn 0.5turn, #fff 0.5turn 0.75turn, #e2e8f0 0.75turn);
             background-size: 20px 20px;
@@ -45,12 +44,10 @@
 </head>
 <body class="min-h-screen">
 
-    <!-- Cover Image Header -->
     <div class="cover-container shadow-lg">
         <img src="images/KV.jpg" alt="AgriS Campaign Cover" class="cover-banner" onerror="this.src='https://placehold.co/1920x1080/064e3b/10b981?text=AgriS+Cover'">
     </div>
 
-    <!-- Header Text Section -->
     <header class="gradient-brand text-white pt-10 pb-24 px-4 text-center relative overflow-hidden">
         <div class="absolute inset-0 opacity-10">
             <svg width="100%" height="100%"><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1"/></pattern><rect width="100%" height="100%" fill="url(#grid)" /></svg>
@@ -63,7 +60,6 @@
     <main class="max-w-7xl mx-auto px-4 -mt-16 mb-20 relative z-20">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- Cột Trái: Preview -->
             <div class="lg:col-span-7 space-y-6">
                 <div class="tool-card flex flex-col items-center">
                     <div class="w-full flex justify-between items-center mb-6 px-2">
@@ -77,7 +73,6 @@
                         </div>
                     </div>
                     
-                    <!-- Container đã ép sát tỉ lệ 1:1, không còn mảng thừa 2 bên -->
                     <div class="w-full flex justify-center">
                         <div class="checkerboard-bg w-full max-w-[500px] aspect-square rounded-3xl overflow-hidden shadow-xl border border-slate-200 touch-none relative">
                             <canvas id="mainCanvas" width="1000" height="1000" class="w-full h-full block"></canvas>
@@ -90,7 +85,6 @@
                 </div>
             </div>
 
-            <!-- Cột Phải: Điều khiển -->
             <div class="lg:col-span-5 space-y-6">
                 
                 <div class="tool-card">
@@ -171,7 +165,6 @@
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl transform scale-95 transition-transform duration-300" id="modalContent">
             <h3 class="text-2xl font-black text-emerald-800 mb-2">Hoàn tất! 🎉</h3>
             
-            <!-- Hướng dẫn cốt lõi để Mobile lưu ảnh -->
             <p class="text-sm text-slate-600 mb-5 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
                 👉 <strong>Chạm và giữ</strong> vào ảnh bên dưới rồi chọn <strong>"Lưu hình ảnh"</strong> để tải về điện thoại.
             </p>
@@ -182,8 +175,11 @@
             
             <div class="flex gap-3">
                 <button id="closeModalBtn" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">Đóng lại</button>
-                <!-- Nút Tải File truyền thống (Tự động kích hoạt trên PC) -->
-                <button id="forceDownloadBtn" class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-200">Tải dạng File</button>
+                <!-- Đổi text thành Lưu hình ảnh & nâng cấp logic -->
+                <button id="forceDownloadBtn" class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-200 flex justify-center items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Lưu hình ảnh
+                </button>
             </div>
         </div>
     </div>
@@ -203,7 +199,6 @@
         const flipBtn = document.getElementById('flipBtn');
         const downloadBtn = document.getElementById('downloadBtn');
 
-        // Khai báo biến UI Modal
         const resultModal = document.getElementById('resultModal');
         const resultImage = document.getElementById('resultImage');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -390,11 +385,10 @@
         window.addEventListener('mouseup', handleEnd);
         window.addEventListener('touchend', handleEnd);
 
-        // --- LOGIC XỬ LÝ MODAL POPUP ---
         function openModal(dataUrl) {
             resultImage.src = dataUrl;
             resultModal.classList.remove('hidden');
-            void resultModal.offsetWidth; // Trigger reflow để animation chạy mượt
+            void resultModal.offsetWidth;
             resultModal.classList.remove('opacity-0');
             modalContent.classList.remove('scale-95');
         }
@@ -407,9 +401,37 @@
 
         closeModalBtn.onclick = closeModal;
 
-        forceDownloadBtn.onclick = () => {
+        // Hàm hỗ trợ chuyển Base64 thành File Object chuẩn (cần cho Mobile Native Share)
+        function dataURLtoFile(dataurl, filename) {
+            let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, {type: mime});
+        }
+
+        // Logic Nút Tải/Lưu ảnh mới
+        forceDownloadBtn.onclick = async () => {
+            const fileName = `AgriS_Avatar_${Date.now()}.png`;
+            
+            // 1. Thử gọi Web Share API (Cách tốt nhất trên Mobile iOS/Android)
+            try {
+                const file = dataURLtoFile(resultImage.src, fileName);
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Avatar AgriS của tôi',
+                    });
+                    return; // Nếu Share thành công thì dừng ở đây
+                }
+            } catch (error) {
+                console.log("Trình duyệt không hỗ trợ Share API hoặc user huỷ", error);
+            }
+
+            // 2. Fallback: Nếu không có Share API (VD trên PC), tự động dùng thẻ <a> để tải
             const link = document.createElement('a');
-            link.download = `AgriS_Avatar_${Date.now()}.png`;
+            link.download = fileName;
             link.href = resultImage.src;
             link.click();
         };
@@ -425,7 +447,7 @@
                     const dataUrl = canvas.toDataURL('image/png', 1.0);
                     openModal(dataUrl);
                     
-                    // Tự động tải file ngầm nếu là trình duyệt PC (vì PC lưu ảnh dễ dàng)
+                    // Trên PC tự động tải file ngầm luôn để đỡ phải bấm thêm
                     if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
                         forceDownloadBtn.click();
                     }
