@@ -2,17 +2,18 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AgriS Avatar Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f8fafc; font-family: 'Lexend', sans-serif; color: #1e293b; }
+        body { background-color: #f8fafc; font-family: 'Lexend', sans-serif; color: #1e293b; touch-action: manipulation; }
         .gradient-brand { background: linear-gradient(135deg, #065f46 0%, #10b981 100%); }
         .canvas-container {
             background-image: conic-gradient(#fff 0.25turn, #f1f5f9 0.25turn 0.5turn, #fff 0.5turn 0.75turn, #f1f5f9 0.75turn);
             background-size: 20px 20px;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            touch-action: none; /* Ngăn cuộn trang khi chạm vào canvas trên mobile */
         }
         canvas { cursor: grab; border-radius: 12px; transition: box-shadow 0.3s; }
         canvas:active { cursor: grabbing; }
@@ -45,7 +46,8 @@
 
     <!-- Cover Image Header -->
     <div class="cover-container shadow-lg">
-        <img src="images/KV.jpg" alt="AgriS Campaign Cover" class="cover-banner">
+        <!-- Chú ý: Hãy đảm bảo đường dẫn ảnh KV.jpg là chính xác trên host của bạn -->
+        <img src="images/KV.jpg" alt="AgriS Campaign Cover" class="cover-banner" onerror="this.src='https://placehold.co/1920x1080/064e3b/10b981?text=AgriS+Cover'">
     </div>
 
     <!-- Header Text Section -->
@@ -75,7 +77,8 @@
                         </div>
                     </div>
                     
-                    <div class="canvas-container p-2 rounded-3xl bg-white shadow-xl border border-slate-100 overflow-hidden">
+                    <div class="canvas-container p-2 rounded-3xl bg-white shadow-xl border border-slate-100 overflow-hidden w-full flex justify-center">
+                        <!-- Thêm id cho container để xử lý sự kiện touch mượt hơn -->
                         <canvas id="mainCanvas" width="1000" height="1000" class="w-full max-w-[500px] h-auto"></canvas>
                     </div>
 
@@ -88,13 +91,21 @@
             <!-- Cột Phải: Điều khiển -->
             <div class="lg:col-span-5 space-y-6">
                 
-                <!-- Tải ảnh -->
+                <!-- Tải ảnh: Đã cập nhật cấu trúc thân thiện với Mobile (Label bọc Input ẩn) -->
                 <div class="tool-card">
                     <h3 class="text-sm font-black text-emerald-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         1. Tải ảnh chân dung
                     </h3>
-                    <input type="file" id="photoInput" accept="image/*" class="w-full text-xs text-gray-500 p-4 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/20 hover:border-emerald-500 transition-all cursor-pointer">
+                    
+                    <label for="photoInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-100 rounded-2xl cursor-pointer transition-colors group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-3 text-emerald-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <p class="mb-2 text-sm text-emerald-700 font-semibold text-center">Nhấn vào đây để chọn ảnh</p>
+                            <p class="text-xs text-emerald-600/70 text-center">Hỗ trợ JPG, PNG</p>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*" class="hidden">
+                    </label>
                 </div>
 
                 <!-- Bảng điều khiển ảnh -->
@@ -202,6 +213,24 @@
                 frameLoaded = true;
                 processFrame();
             };
+            // Thêm xử lý lỗi nếu không tải được frame
+            frameImg.onerror = () => {
+                console.warn("Không tìm thấy frame tại: " + url);
+                drawFallbackText();
+            }
+        }
+
+        function drawFallbackText() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(0, 0, 1000, 1000);
+            ctx.fillStyle = '#10b981';
+            ctx.font = 'bold 40px Lexend';
+            ctx.textAlign = 'center';
+            ctx.fillText('Vui lòng upload thư mục lên Host', 500, 480);
+            ctx.font = '24px Lexend';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('để thấy Frame gốc', 500, 530);
         }
 
         function processFrame() {
@@ -257,18 +286,21 @@
         }
 
         photoInput.onchange = (e) => {
+            if (!e.target.files || !e.target.files[0]) return;
             const r = new FileReader();
             r.onload = (v) => { 
                 photoImg.src = v.target.result; 
                 photoImg.onload = () => {
                     photoLoaded = true;
+                    // Reset thông số khi tải ảnh mới
                     state.scale = 1000 / photoImg.width;
+                    if(state.scale > 3) state.scale = 3; // Giới hạn scale tối đa khi mới load
                     zoomRange.value = state.scale * 100;
                     document.getElementById('zoomVal').textContent = Math.round(state.scale * 100) + '%';
                     centerPhoto();
                 };
             };
-            if(e.target.files[0]) r.readAsDataURL(e.target.files[0]);
+            r.readAsDataURL(e.target.files[0]);
         };
 
         zoomRange.oninput = (e) => { 
@@ -304,28 +336,45 @@
         flipBtn.onclick = () => { state.flip *= -1; draw(); };
         function centerPhoto() { state.x = 500; state.y = 500; draw(); }
 
+        // Tối ưu hoá Touch Events cho Mobile
         const getPos = (e) => {
             const r = canvas.getBoundingClientRect();
-            const cx = e.touches ? e.touches[0].clientX : e.clientX;
-            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            const cx = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
             return { x: (cx - r.left) * (1000/r.width), y: (cy - r.top) * (1000/r.height) };
         };
-        canvas.onmousedown = canvas.ontouchstart = (e) => { 
+
+        const handleStart = (e) => {
             if (!photoLoaded) return;
             state.isDragging = true; 
             const p = getPos(e); 
             state.lastX = p.x; state.lastY = p.y; 
         };
-        window.onmousemove = window.ontouchmove = (e) => {
+
+        const handleMove = (e) => {
             if (!state.isDragging) return;
-            if (e.type === 'touchmove') e.preventDefault();
+            // Chỉ chặn hành vi cuộn mặc định khi đang thực sự kéo ảnh trên canvas
+            if (e.cancelable) e.preventDefault(); 
             const p = getPos(e);
             state.x += (p.x - state.lastX);
             state.y += (p.y - state.lastY);
             state.lastX = p.x; state.lastY = p.y;
             draw();
         };
-        window.onmouseup = window.ontouchend = () => state.isDragging = false;
+
+        const handleEnd = () => {
+            state.isDragging = false;
+        };
+
+        // Lắng nghe sự kiện một cách an toàn
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+
+        window.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('touchmove', handleMove, { passive: false }); // Chuyển từ window sang canvas để không khóa cuộn toàn trang
+
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchend', handleEnd);
 
         downloadBtn.onclick = () => {
             if (!photoLoaded) return alert('Hãy chọn ảnh chân dung trước nhé!');
@@ -338,7 +387,7 @@
                     link.download = `AgriS_Avatar_${Date.now()}.png`;
                     link.href = canvas.toDataURL('image/png', 1.0);
                     link.click();
-                } catch (err) { alert('Lỗi: Trình duyệt chặn quyền truy cập ảnh (CORS).'); }
+                } catch (err) { alert('Lỗi: Trình duyệt chặn quyền truy cập ảnh (CORS). Hãy đảm bảo bạn đang chạy qua máy chủ (localhost/hosting).'); }
                 downloadBtn.innerHTML = originalText;
                 downloadBtn.style.opacity = '1';
             }, 800);
