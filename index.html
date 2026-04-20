@@ -132,7 +132,7 @@
                 <div class="pt-2">
                     <button id="downloadBtn" class="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl rounded-[2rem] shadow-2xl shadow-emerald-200 transition-all flex items-center justify-center gap-3 active:scale-95 transform hover:-translate-y-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        TẢI AVATAR KẾT QUẢ
+                        <span>TẢI AVATAR KẾT QUẢ</span>
                     </button>
                 </div>
             </div>
@@ -385,9 +385,17 @@
 
         forceDownloadBtn.onclick = async () => {
             const fileName = `AgriS_Avatar_${Date.now()}.png`;
+            const originalHTML = forceDownloadBtn.innerHTML;
+            
+            // UI Loading state cho Modal Download Button
+            forceDownloadBtn.disabled = true;
+            forceDownloadBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            forceDownloadBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span class="ml-2">Đang xử lý...</span>
+            `;
             
             if (isMobile) {
-                // 1. Nếu là Mobile: Kích hoạt Share API gốc của OS
                 try {
                     const file = dataURLtoFile(resultImage.src, fileName);
                     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -396,26 +404,38 @@
                             title: 'Avatar AgriS của tôi',
                         });
                     } else {
-                        // Fallback nếu share bị từ chối
                         alert('Hãy chạm và giữ vào ảnh để lưu nhé!');
                     }
                 } catch (error) {
                     console.log("Web Share API error", error);
                 }
             } else {
-                // 2. Nếu là PC: Buộc tải xuống (Force Download) ngay lập tức
                 const link = document.createElement('a');
                 link.download = fileName;
                 link.href = resultImage.src;
                 link.click();
             }
+
+            // Restore trạng thái gốc sau thời gian ngắn
+            setTimeout(() => {
+                forceDownloadBtn.disabled = false;
+                forceDownloadBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                forceDownloadBtn.innerHTML = originalHTML;
+            }, 800);
         };
 
         downloadBtn.onclick = () => {
             if (!photoLoaded) return alert('Hãy chọn ảnh chân dung trước nhé!');
-            const originalText = downloadBtn.innerHTML;
-            downloadBtn.innerHTML = '<span class="animate-pulse">ĐANG XỬ LÝ...</span>';
-            downloadBtn.style.opacity = '0.7';
+            
+            const originalHTML = downloadBtn.innerHTML;
+            
+            // UI Loading state cho Main Download Button
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            downloadBtn.innerHTML = `
+                <svg class="animate-spin h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span class="ml-3">ĐANG KẾT XUẤT...</span>
+            `;
             
             setTimeout(() => {
                 try {
@@ -423,15 +443,17 @@
                     openModal(dataUrl);
                     
                     if (!isMobile) {
-                        // Nếu là PC, khi Modal hiện lên thì tự động tải ảnh ngầm luôn, không bắt user bấm thêm 1 lần
                         forceDownloadBtn.click();
                     }
                 } catch (err) { 
                     alert('Lỗi: Hãy đảm bảo bạn đang chạy qua máy chủ (localhost/hosting).'); 
                 }
-                downloadBtn.innerHTML = originalText;
-                downloadBtn.style.opacity = '1';
-            }, 500);
+                
+                // Trả về trạng thái cũ
+                downloadBtn.disabled = false;
+                downloadBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                downloadBtn.innerHTML = originalHTML;
+            }, 600); // Set timeout nhỏ để UI có thời gian render icon xoay
         };
 
         init();
