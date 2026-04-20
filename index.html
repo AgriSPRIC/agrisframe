@@ -127,27 +127,6 @@
                             <input type="range" id="rotateRange" min="0" max="360" value="0" class="w-full">
                         </div>
                     </div>
-
-                    <div class="h-px bg-slate-100 w-full"></div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter"><span>Độ sáng</span><span id="brightVal">100%</span></div>
-                            <input type="range" id="brightRange" min="50" max="150" value="100" class="w-full">
-                        </div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter"><span>Tương phản</span><span id="contrastVal">100%</span></div>
-                            <input type="range" id="contrastRange" min="50" max="150" value="100" class="w-full">
-                        </div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter"><span>Bão hòa</span><span id="saturateVal">100%</span></div>
-                            <input type="range" id="saturateRange" min="0" max="200" value="100" class="w-full">
-                        </div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter"><span>Làm mờ</span><span id="blurVal">0px</span></div>
-                            <input type="range" id="blurRange" min="0" max="10" step="0.5" value="0" class="w-full">
-                        </div>
-                    </div>
                 </div>
 
                 <div class="pt-2">
@@ -192,10 +171,6 @@
         const photoInput = document.getElementById('photoInput');
         const zoomRange = document.getElementById('zoomRange');
         const rotateRange = document.getElementById('rotateRange');
-        const brightRange = document.getElementById('brightRange');
-        const contrastRange = document.getElementById('contrastRange');
-        const saturateRange = document.getElementById('saturateRange');
-        const blurRange = document.getElementById('blurRange');
         const flipBtn = document.getElementById('flipBtn');
         const downloadBtn = document.getElementById('downloadBtn');
 
@@ -215,7 +190,6 @@
 
         let state = { 
             x: 500, y: 500, scale: 1, rotation: 0, 
-            brightness: 100, contrast: 100, saturation: 100, blur: 0,
             flip: 1, isDragging: false, lastX: 0, lastY: 0 
         };
 
@@ -297,7 +271,6 @@
 
             if (photoLoaded && photoImg.complete && photoImg.naturalWidth !== 0) {
                 ctx.save();
-                ctx.filter = `brightness(${state.brightness}%) contrast(${state.contrast}%) saturate(${state.saturation}%) blur(${state.blur}px)`;
                 ctx.translate(state.x, state.y);
                 ctx.rotate(state.rotation * Math.PI/180);
                 ctx.scale(state.flip, 1);
@@ -307,7 +280,6 @@
                 ctx.restore();
             }
 
-            ctx.filter = 'none';
             if (processedFrame) {
                 ctx.drawImage(processedFrame, 0, 0, 1000, 1000);
             } else if (frameLoaded) {
@@ -349,26 +321,6 @@
             state.rotation = parseInt(e.target.value); 
             document.getElementById('rotateVal').textContent = e.target.value + '°';
             draw(); 
-        };
-        brightRange.oninput = (e) => {
-            state.brightness = parseInt(e.target.value);
-            document.getElementById('brightVal').textContent = e.target.value + '%';
-            draw();
-        };
-        contrastRange.oninput = (e) => {
-            state.contrast = parseInt(e.target.value);
-            document.getElementById('contrastVal').textContent = e.target.value + '%';
-            draw();
-        };
-        saturateRange.oninput = (e) => {
-            state.saturation = parseInt(e.target.value);
-            document.getElementById('saturateVal').textContent = e.target.value + '%';
-            draw();
-        };
-        blurRange.oninput = (e) => {
-            state.blur = parseFloat(e.target.value);
-            document.getElementById('blurVal').textContent = e.target.value + 'px';
-            draw();
         };
         flipBtn.onclick = () => { state.flip *= -1; draw(); };
         function centerPhoto() { state.x = 500; state.y = 500; draw(); }
